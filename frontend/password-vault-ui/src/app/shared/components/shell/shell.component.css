@@ -1,0 +1,132 @@
+.shell-container {
+  height: 100vh;
+}
+.shell-sidenav {
+  width: 248px;
+  background: var(--pv-surface);
+  border-right: 1px solid var(--pv-border);
+  display: flex;
+  flex-direction: column;
+}
+.sidenav-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--pv-border);
+  flex-shrink: 0;
+}
+.logo-icon {
+  color: var(--pv-accent);
+}
+.logo-text {
+  font-family: "DM Serif Display", serif;
+  font-size: 17px;
+  color: var(--pv-text-primary);
+}
+.sidenav-nav {
+  padding: 12px 8px;
+  flex: 1;
+}
+a[mat-list-item] {
+  border-radius: 8px;
+  margin-bottom: 2px;
+  color: var(--pv-text-secondary);
+}
+.active-link {
+  background: var(--pv-accent-dim) !important;
+  color: var(--pv-accent) !important;
+}
+.active-link mat-icon {
+  color: var(--pv-accent) !important;
+}
+.sidenav-footer {
+  padding: 12px 16px 20px;
+  border-top: 1px solid var(--pv-border);
+  flex-shrink: 0;
+}
+.theme-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--pv-text-secondary);
+  font-size: 13px;
+}
+.theme-icon {
+  font-size: 18px;
+}
+.theme-label {
+  flex: 1;
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--pv-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pv-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-email {
+  font-size: 11px;
+  color: var(--pv-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.shell-toolbar {
+  background: var(--pv-surface) !important;
+  border-bottom: 1px solid var(--pv-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.toolbar-title {
+  font-family: "DM Serif Display", serif;
+  font-size: 17px;
+}
+.spacer {
+  flex: 1;
+}
+.toolbar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--pv-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+.shell-content {
+  display: flex;
+  flex-direction: column;
+}
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+}

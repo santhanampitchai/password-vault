@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════════════════
+   Password Vault – Global Styles
+   Dark-first design; switches to light via [data-theme="light"]
+═══════════════════════════════════════════════════════════ */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&family=Fira+Code:wght@400&display=swap");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+
+/* ─── Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Dark theme (default) */
+  --pv-bg: #0d0f12;
+  --pv-surface: #161a20;
+  --pv-surface-2: #1e232b;
+  --pv-border: #2a2f3a;
+  --pv-hover: rgba(255, 255, 255, 0.04);
+  --pv-accent: #6c8fff;
+  --pv-accent-dim: rgba(108, 143, 255, 0.12);
+  --pv-accent-rgb: 108, 143, 255;
+  --pv-text-primary: #eaedf3;
+  --pv-text-secondary: #7d8799;
+  --pv-success: #4caf50;
+  --pv-error: #f44336;
+  --pv-warn: #ff9800;
+}
+
+[data-theme="light"] {
+  --pv-bg: #f0f2f7;
+  --pv-surface: #ffffff;
+  --pv-surface-2: #f6f8fc;
+  --pv-border: #e1e5ee;
+  --pv-hover: rgba(0, 0, 0, 0.03);
+  --pv-accent: #3b62f0;
+  --pv-accent-dim: rgba(59, 98, 240, 0.1);
+  --pv-accent-rgb: 59, 98, 240;
+  --pv-text-primary: #111827;
+  --pv-text-secondary: #6b7280;
+}
+
+/* ─── Reset ───────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  background: var(--pv-bg);
+  color: var(--pv-text-primary);
+}
+
+/* ─── Angular Material Overrides ─────────────────────────────── */
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: 10px;
+  --mdc-outlined-text-field-outline-color: var(--pv-border);
+  --mdc-outlined-text-field-hover-outline-color: var(--pv-accent);
+  --mdc-outlined-text-field-focus-outline-color: var(--pv-accent);
+  --mdc-outlined-text-field-label-text-color: var(--pv-text-secondary);
+  --mdc-outlined-text-field-input-text-color: var(--pv-text-primary);
+  --mdc-outlined-text-field-container-color: var(--pv-surface);
+}
+
+.mat-mdc-card {
+  background: var(--pv-surface) !important;
+  border: 1px solid var(--pv-border) !important;
+}
+
+.mat-mdc-table {
+  background: var(--pv-surface) !important;
+  --mat-table-header-headline-color: var(--pv-text-secondary);
+  --mat-table-row-item-label-text-color: var(--pv-text-primary);
+}
+
+.mat-mdc-paginator {
+  background: var(--pv-surface) !important;
+  color: var(--pv-text-secondary) !important;
+  border-top: 1px solid var(--pv-border);
+}
+
+.mat-drawer-container {
+  background: var(--pv-bg) !important;
+}
+
+/* ─── Toast Notifications ────────────────────────────────────── */
+.toast-success .mdc-snackbar__surface {
+  background: #1e4d2b !important;
+}
+.toast-error .mdc-snackbar__surface {
+  background: #4d1e1e !important;
+}
+.toast-info .mdc-snackbar__surface {
+  background: #1e2f4d !important;
+}
+.mdc-snackbar__label {
+  color: #fff !important;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pv-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pv-text-secondary);
+}

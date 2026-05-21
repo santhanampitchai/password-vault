@@ -1,0 +1,102 @@
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <mat-icon class="brand-icon">shield</mat-icon>
+      <h1>Create Account</h1>
+      <p>Start securing your credentials today</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="auth-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Full Name</mat-label>
+        <input matInput formControlName="fullName" />
+        <mat-icon matPrefix>person</mat-icon>
+        <mat-error>Full name is required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput formControlName="email" type="email" />
+        <mat-icon matPrefix>email</mat-icon>
+        <mat-error *ngIf="form.get('email')?.hasError('required')"
+          >Email is required</mat-error
+        >
+        <mat-error *ngIf="form.get('email')?.hasError('email')"
+          >Invalid email</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input
+          matInput
+          formControlName="password"
+          [type]="showPwd ? 'text' : 'password'"
+          (input)="updateStrength()"
+        />
+        <mat-icon matPrefix>key</mat-icon>
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="showPwd = !showPwd"
+        >
+          <mat-icon>{{ showPwd ? "visibility_off" : "visibility" }}</mat-icon>
+        </button>
+        <mat-error *ngIf="form.get('password')?.hasError('required')"
+          >Password required</mat-error
+        >
+        <mat-error *ngIf="form.get('password')?.hasError('minlength')"
+          >Min 8 characters</mat-error
+        >
+      </mat-form-field>
+
+      <div class="strength-wrap" *ngIf="form.get('password')?.value">
+        <mat-progress-bar
+          mode="determinate"
+          [value]="strength.score * 20"
+          [style.--mdc-linear-progress-active-indicator-color]="strength.color"
+        >
+        </mat-progress-bar>
+        <span class="strength-label" [style.color]="strength.color">
+          {{ strength.label }}
+        </span>
+      </div>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Confirm Password</mat-label>
+        <input
+          matInput
+          formControlName="confirmPassword"
+          [type]="showPwd ? 'text' : 'password'"
+        />
+        <mat-icon matPrefix>key</mat-icon>
+        <mat-error *ngIf="form.get('confirmPassword')?.hasError('required')"
+          >Please confirm</mat-error
+        >
+        <mat-error *ngIf="form.errors?.['mismatch']"
+          >Passwords do not match</mat-error
+        >
+      </mat-form-field>
+
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid || loading"
+        class="submit-btn"
+      >
+        <mat-spinner
+          *ngIf="loading"
+          diameter="20"
+          class="btn-spinner"
+        ></mat-spinner>
+        <span *ngIf="!loading">Create Account</span>
+      </button>
+
+      <p class="auth-link">
+        Already have an account? <a routerLink="/auth/login">Sign in</a>
+      </p>
+    </form>
+  </div>
+</div>

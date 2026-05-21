@@ -1,0 +1,160 @@
+<div class="form-page">
+  <div class="form-header">
+    <button mat-icon-button routerLink="/accounts" matTooltip="Back">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2>{{ isEdit ? "Edit Account" : "Add New Account" }}</h2>
+  </div>
+
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid">
+          <!-- Account Name -->
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Account Name *</mat-label>
+            <input
+              matInput
+              formControlName="accountName"
+              placeholder="e.g. Gmail"
+            />
+            <mat-icon matPrefix>label</mat-icon>
+            <mat-error>Account name is required</mat-error>
+          </mat-form-field>
+
+          <!-- Username -->
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>Username / Email *</mat-label>
+            <input
+              matInput
+              formControlName="userName"
+              placeholder="e.g. abc@gmail.com"
+            />
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error>Username is required</mat-error>
+          </mat-form-field>
+
+          <!-- Category -->
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>Category</mat-label>
+            <mat-select formControlName="category">
+              <mat-option value="">None</mat-option>
+              <mat-option *ngFor="let c of categories" [value]="c">{{
+                c
+              }}</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>folder</mat-icon>
+          </mat-form-field>
+
+          <!-- Password -->
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Password *</mat-label>
+            <input
+              matInput
+              formControlName="password"
+              [type]="showPwd ? 'text' : 'password'"
+              (input)="updateStrength()"
+            />
+            <mat-icon matPrefix>key</mat-icon>
+            <div matSuffix class="pwd-suffix">
+              <button
+                mat-icon-button
+                type="button"
+                (click)="showPwd = !showPwd"
+              >
+                <mat-icon>{{
+                  showPwd ? "visibility_off" : "visibility"
+                }}</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="generatePassword()"
+                matTooltip="Generate strong password"
+              >
+                <mat-icon>auto_fix_high</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="copyField('password', 'Password')"
+                matTooltip="Copy password"
+              >
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </div>
+            <mat-error>Password is required</mat-error>
+          </mat-form-field>
+
+          <!-- Strength bar -->
+          <div class="strength-block full" *ngIf="form.get('password')?.value">
+            <mat-progress-bar
+              mode="determinate"
+              [value]="strength.pct"
+              [style.--mdc-linear-progress-active-indicator-color]="
+                strength.color
+              "
+            >
+            </mat-progress-bar>
+            <span class="strength-text" [style.color]="strength.color">
+              {{ strength.label }}
+            </span>
+          </div>
+
+          <!-- Website -->
+          <mat-form-field appearance="outline" class="half">
+            <mat-label>Website URL</mat-label>
+            <input
+              matInput
+              formControlName="websiteUrl"
+              placeholder="https://..."
+            />
+            <mat-icon matPrefix>link</mat-icon>
+          </mat-form-field>
+
+          <!-- Other Info -->
+          <mat-form-field appearance="outline" class="full">
+            <mat-label>Other Information (encrypted)</mat-label>
+            <textarea
+              matInput
+              formControlName="otherInfo"
+              rows="3"
+              placeholder="Recovery email, notes, phone number…"
+            ></textarea>
+            <mat-icon matPrefix>notes</mat-icon>
+            <mat-hint
+              >Stored encrypted — never visible in plain text on the
+              server</mat-hint
+            >
+          </mat-form-field>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button mat-stroked-button type="button" routerLink="/accounts">
+            Cancel
+          </button>
+          <button
+            mat-raised-button
+            color="primary"
+            type="submit"
+            [disabled]="form.invalid || saving"
+          >
+            <mat-spinner *ngIf="saving" diameter="18"></mat-spinner>
+            <mat-icon *ngIf="!saving">save</mat-icon>
+            <span>{{ isEdit ? "Save Changes" : "Save Account" }}</span>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- E2EE notice -->
+  <div class="e2ee-notice">
+    <mat-icon>shield</mat-icon>
+    <span
+      >Your password is encrypted in this browser before being sent. The server
+      never sees your plaintext password.</span
+    >
+  </div>
+</div>

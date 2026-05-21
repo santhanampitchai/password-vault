@@ -1,0 +1,81 @@
+<mat-sidenav-container class="shell-container">
+  <mat-sidenav
+    #sidenav
+    [mode]="isMobile() ? 'over' : 'side'"
+    [opened]="!isMobile()"
+    class="shell-sidenav"
+  >
+    <div class="sidenav-header">
+      <mat-icon class="logo-icon">lock</mat-icon>
+      <span class="logo-text">Password Vault</span>
+    </div>
+    <nav class="sidenav-nav">
+      <a
+        mat-list-item
+        routerLink="/accounts"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <mat-icon matListItemIcon>grid_view</mat-icon>
+        <span matListItemTitle>My Vault</span>
+      </a>
+      <a
+        mat-list-item
+        routerLink="/accounts/new"
+        routerLinkActive="active-link"
+      >
+        <mat-icon matListItemIcon>add_circle_outline</mat-icon>
+        <span matListItemTitle>Add Account</span>
+      </a>
+    </nav>
+    <div class="sidenav-footer">
+      <div class="theme-row">
+        <mat-icon class="theme-icon">{{
+          theme.isDark() ? "dark_mode" : "light_mode"
+        }}</mat-icon>
+        <span class="theme-label"
+          >{{ theme.isDark() ? "Dark" : "Light" }} Mode</span
+        >
+        <button
+          mat-icon-button
+          (click)="theme.toggle()"
+          matTooltip="Toggle theme"
+        >
+          <mat-icon>swap_horiz</mat-icon>
+        </button>
+      </div>
+      <div class="user-row">
+        <div class="user-avatar">{{ userInitial() }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ auth.currentUser()?.fullName }}</div>
+          <div class="user-email">{{ auth.currentUser()?.email }}</div>
+        </div>
+        <button mat-icon-button (click)="auth.logout()" matTooltip="Sign out">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="shell-content">
+    <mat-toolbar class="shell-toolbar" *ngIf="isMobile()">
+      <button mat-icon-button (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="toolbar-title">Password Vault</span>
+      <span class="spacer"></span>
+      <button mat-icon-button (click)="theme.toggle()">
+        <mat-icon>{{ theme.isDark() ? "light_mode" : "dark_mode" }}</mat-icon>
+      </button>
+      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+        <div class="toolbar-avatar">{{ userInitial() }}</div>
+      </button>
+      <mat-menu #userMenu>
+        <button mat-menu-item (click)="auth.logout()">
+          <mat-icon>logout</mat-icon> Sign out
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+    <div class="page-content"><router-outlet></router-outlet></div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

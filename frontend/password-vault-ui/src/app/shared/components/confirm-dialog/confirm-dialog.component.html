@@ -1,0 +1,15 @@
+<div class="confirm-dialog">
+  <div class="confirm-header">
+    <mat-icon class="warn-icon">warning</mat-icon>
+    <h2>{{ data.title }}</h2>
+  </div>
+  <mat-dialog-content>
+    <p>{{ data.message }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="ref.close(false)">Cancel</button>
+    <button mat-raised-button color="warn" (click)="ref.close(true)">
+      Delete
+    </button>
+  </mat-dialog-actions>
+</div>

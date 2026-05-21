@@ -1,0 +1,215 @@
+<div class="list-container">
+  <!-- Header -->
+  <div class="list-header">
+    <div class="header-left">
+      <h2>Your Vault</h2>
+      <span class="count-badge">{{ totalCount() }} accounts</span>
+    </div>
+    <button mat-raised-button color="primary" [routerLink]="['/accounts/new']">
+      <mat-icon>add</mat-icon> Add Account
+    </button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search accounts…</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearch($event)"
+      />
+      <button
+        *ngIf="searchTerm"
+        matSuffix
+        mat-icon-button
+        (click)="clearSearch()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Category</mat-label>
+      <mat-select [(ngModel)]="categoryFilter" (ngModelChange)="loadData()">
+        <mat-option value="">All</mat-option>
+        <mat-option *ngFor="let c of categories" [value]="c">{{
+          c
+        }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Progress bar -->
+  <mat-progress-bar
+    *ngIf="loading"
+    mode="indeterminate"
+    class="loading-bar"
+  ></mat-progress-bar>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table
+      mat-table
+      [dataSource]="accounts"
+      matSort
+      (matSortChange)="onSort($event)"
+      class="accounts-table"
+    >
+      <!-- Account Name -->
+      <ng-container matColumnDef="accountName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Account</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="account-name-cell">
+            <div
+              class="account-avatar"
+              [attr.data-letter]="row.accountName[0].toUpperCase()"
+            >
+              {{ row.accountName[0].toUpperCase() }}
+            </div>
+            <div>
+              <div class="name">{{ row.accountName }}</div>
+              <div class="url" *ngIf="row.websiteUrl">{{ row.websiteUrl }}</div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Username -->
+      <ng-container matColumnDef="userName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Username</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="copy-cell">
+            <span>{{ row.userName }}</span>
+            <button
+              mat-icon-button
+              class="copy-btn"
+              (click)="copy(row.userName, 'Username')"
+              matTooltip="Copy username"
+            >
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Category -->
+      <ng-container matColumnDef="category">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="category-chip" *ngIf="row.category">{{
+            row.category
+          }}</span>
+          <span class="none" *ngIf="!row.category">—</span>
+        </td>
+      </ng-container>
+
+      <!-- Password -->
+      <ng-container matColumnDef="password">
+        <th mat-header-cell *matHeaderCellDef>Password</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="password-cell">
+            <span
+              class="pwd-display"
+              [class.revealed]="rowState(row.accountId)?.revealed"
+            >
+              {{
+                rowState(row.accountId)?.revealed
+                  ? rowState(row.accountId)?.password
+                  : "••••••••"
+              }}
+            </span>
+            <button
+              mat-icon-button
+              class="eye-btn"
+              [class.active]="rowState(row.accountId)?.revealed"
+              (click)="toggleReveal(row)"
+              [matTooltip]="
+                rowState(row.accountId)?.revealed ? 'Hide' : 'Reveal'
+              "
+              [disabled]="rowState(row.accountId)?.revealing"
+            >
+              <mat-icon>{{
+                rowState(row.accountId)?.revealed
+                  ? "visibility_off"
+                  : "visibility"
+              }}</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              class="copy-btn"
+              (click)="copyPassword(row)"
+              matTooltip="Copy password"
+            >
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <!-- Date -->
+      <ng-container matColumnDef="createdDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
+        <td mat-cell *matCellDef="let row">
+          {{ row.createdDate | date: "mediumDate" }}
+        </td>
+      </ng-container>
+
+      <!-- Actions -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let row">
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button
+              mat-menu-item
+              [routerLink]="['/accounts/edit', row.accountId]"
+            >
+              <mat-icon>edit</mat-icon> Edit
+            </button>
+            <button mat-menu-item (click)="copyPassword(row)">
+              <mat-icon>content_copy</mat-icon> Copy Password
+            </button>
+            <button mat-menu-item class="delete-item" (click)="delete(row)">
+              <mat-icon>delete</mat-icon> Delete
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: columns"
+        [class.row-hover]="true"
+      ></tr>
+    </table>
+
+    <!-- Empty state -->
+    <div class="empty-state" *ngIf="!loading && accounts.length === 0">
+      <mat-icon>lock_open</mat-icon>
+      <h3>No accounts yet</h3>
+      <p>Add your first credential to get started.</p>
+      <button
+        mat-raised-button
+        color="primary"
+        [routerLink]="['/accounts/new']"
+      >
+        Add Account
+      </button>
+    </div>
+  </div>
+
+  <!-- Paginator -->
+  <mat-paginator
+    [length]="totalCount()"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[10, 20, 50]"
+    (page)="onPage($event)"
+    showFirstLastButtons
+  >
+  </mat-paginator>
+</div>

@@ -1,0 +1,23 @@
+.confirm-dialog {
+  padding: 8px;
+}
+.confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+.warn-icon {
+  color: #f44336;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+h2 {
+  margin: 0;
+  font-size: 18px;
+}
+p {
+  color: var(--pv-text-secondary);
+  margin: 0;
+}
