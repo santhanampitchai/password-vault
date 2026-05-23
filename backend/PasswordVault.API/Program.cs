@@ -145,12 +145,26 @@ try
     // ─── App Pipeline ──────────────────────────────────────────────────────
     var app = builder.Build();
 
-    // Run EF migrations on startup (dev only; use migration scripts in prod)
-    if (app.Environment.IsDevelopment())
+    // Run EF migrations on startup (all environments in Docker)
+    using (var scope = app.Services.CreateScope())
     {
-        using var scope = app.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<AppDbContext>()
-            .Database.MigrateAsync();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var maxRetries = 10;
+        for (int i = 1; i <= maxRetries; i++)
+        {
+            try
+            {
+                Log.Information("Applying EF migrations (attempt {Attempt}/{Max})...", i, maxRetries);
+                await db.Database.MigrateAsync();
+                Log.Information("EF migrations applied successfully.");
+                break;
+            }
+            catch (Exception ex) when (i < maxRetries)
+            {
+                Log.Warning(ex, "Migration attempt {Attempt} failed. Retrying in 5s...", i);
+                await Task.Delay(TimeSpan.FromSeconds(5));
+            }
+        }
     }
 
     app.UseMiddleware<GlobalExceptionMiddleware>();

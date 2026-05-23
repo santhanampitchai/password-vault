@@ -7,7 +7,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: pv-sqlserver
     environment:
-      SA_PASSWORD: "YourStrong!Passw0rd"
+      SA_PASSWORD: "${SA_PASSWORD}"
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Developer"
     ports:
@@ -15,8 +15,7 @@ services:
     volumes:
       - sqldata:/var/opt/mssql
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost",
-             "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD} -Q 'SELECT 1' -No || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD} -Q 'SELECT 1'"]
       interval: 10s
       retries: 10
       start_period: 30s
@@ -28,14 +27,14 @@ services:
       dockerfile: Dockerfile
     container_name: pv-api
     environment:
-      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "http://+:5000"
       ConnectionStrings__DefaultConnection: >
         Server=sqlserver,1433;Database=PasswordVaultDB;
-        User Id=sa;Password=YourStrong!Passw0rd;
+        User Id=sa;Password=${SA_PASSWORD};
         TrustServerCertificate=True;
-      Security__EncryptionKey: "CHANGE_ME_32_CHAR_SECRET_KEY_HERE"
-      Security__JwtSecret: "CHANGE_ME_VERY_LONG_JWT_SECRET_KEY_AT_LEAST_64_CHARS_LONG!!"
+      Security__EncryptionKey: "${ENCRYPTION_KEY}"
+      Security__JwtSecret: "${JWT_SECRET}"
       Security__JwtIssuer: "PasswordVaultAPI"
       Security__JwtAudience: "PasswordVaultClient"
       Security__JwtExpiryMinutes: "60"

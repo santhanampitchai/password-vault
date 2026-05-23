@@ -8,6 +8,7 @@ obj/
 logs/
 *.nupkg
 appsettings.Production.json
+appsettings.Development.json
 
 ## Angular / Node
 node_modules/
