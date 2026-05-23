@@ -1,7 +1,7 @@
 # 🔐 Password Vault
 
 A full-stack, production-ready **secure password manager** with **End-to-End Encryption (E2EE)**.  
-Built with **Angular 19 + ASP.NET Core .NET 10 + SQL Server**.
+Built with **Angular 19 + ASP.NET Core .NET 10 + SQL Server 2022**.
 
 ---
 
@@ -14,13 +14,18 @@ password-vault/
 │   ├── PasswordVault.Application/     # DTOs, service interfaces, business logic
 │   ├── PasswordVault.Infrastructure/  # EF Core, repositories, JWT, AES encryption
 │   ├── PasswordVault.API/             # Controllers, middleware, Program.cs
-│   └── PasswordVault.Tests/           # xUnit + Moq unit tests
+│   ├── PasswordVault.Tests/           # xUnit + Moq unit tests
+│   ├── .dockerignore                  # Excludes bin/obj from Docker build context
+│   └── Dockerfile                     # Multi-stage build (.NET SDK → ASP.NET runtime)
 ├── frontend/
 │   └── password-vault-ui/             # Angular 19 standalone components
+│       └── Dockerfile                 # Multi-stage build (Node → Nginx)
 ├── scripts/
 │   ├── 01_create_database.sql         # DB + tables creation
 │   └── 02_seed_data.sql               # Demo data
-├── docker-compose.yml
+├── .env.example                       # Secret variable template (safe to commit)
+├── .env                               # Your local secrets (gitignored — never commit)
+├── docker-compose.yml                 # Orchestrates all 3 containers
 └── README.md
 ```
 
@@ -34,10 +39,11 @@ password-vault/
 | Transport | HTTPS + JWT Bearer tokens |
 | Server-side re-encryption | AES-256-CBC (double-layer, defence in depth) |
 | Password storage | PBKDF2-SHA512, 350,000 iterations, random 32-byte salt |
-| JWT | HMAC-SHA512, 1-hour expiry + refresh token |
+| JWT | HMAC-SHA512, minimum 64-char key, 1-hour expiry + refresh token |
 | Headers | CSP, X-Frame-Options, HSTS, Permissions-Policy |
 | Rate limiting | 20 auth requests / 15 minutes |
 | Audit logging | Every password reveal is logged (Serilog structured log) |
+| Non-root container | API runs as `$APP_UID` — never as root inside Docker |
 
 > **Plain-text passwords never leave the browser** and are never stored anywhere on the server.
 
@@ -45,43 +51,176 @@ password-vault/
 
 ## Prerequisites
 
+### For Docker (Recommended)
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Docker Desktop | 24+ | Requires WSL 2 on Windows |
+| WSL 2 | Latest | Windows only — `wsl --install` |
+
+### For Local Development (Without Docker)
+
 | Tool | Version |
 |------|---------|
 | .NET SDK | 10.0+ |
 | Node.js | 22+ |
 | Angular CLI | 19+ (`npm i -g @angular/cli`) |
 | SQL Server | 2019+ or Azure SQL |
-| Docker (optional) | 24+ |
 
 ---
 
-## Quick Start (Local Development)
+## Running with Docker (Recommended)
 
-### 1 – Database
+Docker is the easiest way to run the full stack — no local .NET, Node, or SQL Server install needed.
 
-```sql
--- Run in SSMS or sqlcmd:
+### Step 1 — Create your secrets file
+
+```bash
+# Copy the template
+cp .env.example .env
+```
+
+Open `.env` and fill in your own values:
+
+```env
+# SQL Server SA password — must include upper, lower, number, symbol
+SA_PASSWORD=YourStrong!Passw0rd
+
+# AES-256 server-side encryption key — EXACTLY 32 characters
+ENCRYPTION_KEY=YourExact32CharKeyHereABCDEFGHIJ
+
+# JWT signing key — AT LEAST 64 characters (512 bits for HMAC-SHA512)
+JWT_SECRET=YourVeryLongJwtSecretKeyThatIsAtLeast64CharactersLongForSecurity!!
+```
+
+> ⚠️ `.env` is gitignored — it will never be committed. Never share or commit this file.
+
+### Step 2 — Build and start all containers
+
+```bash
+docker compose up --build -d
+```
+
+This starts **3 containers**:
+
+```
+Your Browser
+    │
+    ├─► http://localhost:4200  →  [pv-frontend]  Angular app (Nginx)
+    │
+    └─► http://localhost:5000  →  [pv-api]       .NET 10 API
+                                       │
+                                       └─► [pv-sqlserver]  SQL Server 2022
+```
+
+> First run takes **5–10 minutes** — Docker downloads SQL Server (~1.5 GB), compiles the .NET API, and builds the Angular app.  
+> Subsequent runs start in **under 30 seconds**.
+
+### Step 3 — Verify all containers are running
+
+```bash
+docker compose ps
+```
+
+Expected output:
+```
+NAME            STATUS
+pv-sqlserver    Up (healthy)
+pv-api          Up
+pv-frontend     Up
+```
+
+### Step 4 — Open the app
+
+| What | URL |
+|------|-----|
+| 🌐 Angular App | http://localhost:4200 |
+| 📋 API Swagger | http://localhost:5000/swagger |
+| ❤️ Health Check | http://localhost:5000/health |
+
+---
+
+## Secret Management
+
+Secrets are **never hardcoded** in any committed file. They flow like this:
+
+```
+.env  (gitignored)
+  │
+  └─► docker-compose.yml  reads ${SA_PASSWORD}, ${ENCRYPTION_KEY}, ${JWT_SECRET}
+            │
+            └─► API container environment variables
+                      │
+                      └─► ASP.NET Core Configuration → DI → Services
+```
+
+| File | Committed? | Purpose |
+|------|-----------|---------|
+| `.env` | ❌ Never | Your real local secrets |
+| `.env.example` | ✅ Yes | Template showing required variables |
+| `docker-compose.yml` | ✅ Yes | References `${VARIABLE}` — no hardcoded values |
+| `appsettings.json` | ✅ Yes | Non-secret defaults and placeholders only |
+| `appsettings.Development.json` | ❌ Never | Local dev overrides (gitignored) |
+
+---
+
+## Handy Docker Commands
+
+```bash
+# Start (after first run — much faster, no rebuild)
+docker compose up -d
+
+# Stop containers (data preserved in volume)
+docker compose down
+
+# Stop AND delete all data (wipes the database)
+docker compose down -v
+
+# Rebuild a single container after a code change
+docker compose up --build api -d
+docker compose up --build frontend -d
+
+# Force recreate a container to pick up new .env values
+docker compose up --force-recreate api -d
+
+# Watch live logs
+docker compose logs -f
+
+# Watch logs for one container
+docker compose logs -f api
+docker compose logs -f frontend
+docker compose logs -f sqlserver
+```
+
+---
+
+## Running Locally (Without Docker)
+
+### 1 — Database
+
+```bash
+# Run in SSMS or sqlcmd:
 sqlcmd -S localhost -E -i scripts/01_create_database.sql
 ```
 
-Or let Entity Framework auto-migrate on first API run (development mode).
+Or let Entity Framework auto-migrate on first API run (EF migrations run automatically on startup).
 
-### 2 – Backend API
+### 2 — Backend API
 
 ```bash
 cd backend
 
-# Set secrets (never commit these!)
-dotnet user-secrets set "Security:EncryptionKey"  "YourExact32CharKeyHere!!!!!!!!!!"  --project PasswordVault.API
-dotnet user-secrets set "Security:JwtSecret"      "YourVeryLongJwtSecretAtLeast64Chars!!!!!!!!!!!!!!!!!!!!!!"  --project PasswordVault.API
+# Set secrets via dotnet user-secrets (never commit these)
+dotnet user-secrets set "Security:EncryptionKey" "YourExact32CharKeyHereABCDEFGHIJ" --project PasswordVault.API
+dotnet user-secrets set "Security:JwtSecret"     "YourVeryLongJwtSecretKeyThatIsAtLeast64CharactersLong!!" --project PasswordVault.API
 
 # Run
 dotnet run --project PasswordVault.API
-# API at: http://localhost:5000
+# API:     http://localhost:5000
 # Swagger: http://localhost:5000/swagger
 ```
 
-### 3 – Frontend
+### 3 — Frontend
 
 ```bash
 cd frontend/password-vault-ui
@@ -92,76 +231,73 @@ ng serve
 
 ---
 
-## Docker (Full Stack)
+## Environment Variables Reference
 
-```bash
-# ⚠️  Edit docker-compose.yml and set strong values for:
-#   Security__EncryptionKey
-#   Security__JwtSecret
-#   SA_PASSWORD
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SA_PASSWORD` | ✅ | SQL Server SA password |
+| `ENCRYPTION_KEY` | ✅ | **Exactly 32 chars** — AES-256 server-side key |
+| `JWT_SECRET` | ✅ | **At least 64 chars** — HMAC-SHA512 JWT signing key |
+| `ConnectionStrings__DefaultConnection` | ✅ | Full SQL Server connection string |
+| `Security__JwtIssuer` | ➖ | JWT issuer (default: `PasswordVaultAPI`) |
+| `Security__JwtAudience` | ➖ | JWT audience (default: `PasswordVaultClient`) |
+| `Security__JwtExpiryMinutes` | ➖ | Token lifetime in minutes (default: `60`) |
+| `AllowedOrigins__0` | ➖ | Angular app origin (default: `http://localhost:4200`) |
 
-docker compose up --build -d
-
-# App:    http://localhost:4200
-# API:    http://localhost:5000
-# Swagger: http://localhost:5000/swagger
-```
-
----
-
-## Environment Variables (Production)
-
-| Variable | Description |
-|----------|-------------|
-| `ConnectionStrings__DefaultConnection` | SQL Server connection string |
-| `Security__EncryptionKey` | **32-char** AES server key |
-| `Security__JwtSecret` | **64+ char** JWT signing key |
-| `Security__JwtIssuer` | JWT issuer (default: `PasswordVaultAPI`) |
-| `Security__JwtAudience` | JWT audience (default: `PasswordVaultClient`) |
-| `Security__JwtExpiryMinutes` | Token lifetime in minutes (default: 60) |
-| `AllowedOrigins__0` | Angular app origin e.g. `https://app.yourdomain.com` |
-
-> Use **Azure Key Vault**, **AWS Secrets Manager**, or **dotnet user-secrets** — never commit secrets to source control.
+> For production use **Azure Key Vault**, **AWS Secrets Manager**, or equivalent — never commit secrets to source control.
 
 ---
 
 ## API Reference
 
-### Auth
+### Auth Endpoints
 
-| Method | Endpoint | Auth |
-|--------|----------|------|
+| Method | Endpoint | Auth Required |
+|--------|----------|--------------|
 | POST | `/api/auth/register` | Public |
 | POST | `/api/auth/login` | Public |
 | POST | `/api/auth/refresh-token` | Public |
 | POST | `/api/auth/logout` | Bearer |
 
-### Accounts
+### Account Endpoints
+
+All account endpoints require `Authorization: Bearer <token>`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/accounts` | Paginated list (search, sort, filter) |
-| GET | `/api/accounts/{id}` | Get by ID (no password payload) |
+| GET | `/api/accounts/{id}` | Get by ID (no password in response) |
 | POST | `/api/accounts` | Create (client-encrypted payload) |
 | PUT | `/api/accounts/{id}` | Update |
 | DELETE | `/api/accounts/{id}` | Delete |
-| POST | `/api/accounts/{id}/decrypt-password` | Unwrap server layer → client decrypts |
-
-All account endpoints require `Authorization: Bearer <token>`.
+| POST | `/api/accounts/{id}/decrypt-password` | Strip server layer → client decrypts |
 
 ---
 
 ## Running Tests
 
 ```bash
-# .NET tests
+# .NET unit tests
 cd backend
 dotnet test --logger "console;verbosity=normal"
 
-# Angular tests
+# Angular unit tests
 cd frontend/password-vault-ui
 ng test --watch=false --browsers=ChromeHeadless
 ```
+
+---
+
+## Docker Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `pv-sqlserver` stays `health: starting` | SQL Server takes 30–60s to initialise | Wait and re-run `docker compose ps` |
+| `pv-api` keeps restarting | SQL Server not ready yet | Restart automatically — wait 1–2 min |
+| Port already in use | Another process owns 1433/5000/4200 | `netstat -ano \| findstr :<port>` then kill the PID |
+| `ERR_CONNECTION_RESET` in browser | `.env` values not loaded / container not recreated | Run `docker compose up --force-recreate api -d` |
+| Icons broken in Angular | Google Fonts blocked by network | Check browser console for CSP errors |
+| New `.env` values not taking effect | `restart` reuses old config | Use `--force-recreate` not `restart` |
 
 ---
 
@@ -179,7 +315,7 @@ ng test --watch=false --browsers=ChromeHeadless
 For the Angular app, build and deploy to any static host:
 ```bash
 ng build --configuration production
-# Copy dist/password-vault-ui/browser/ to IIS wwwroot
+# Copy dist/password-vault-ui/browser/ to IIS wwwroot or any CDN
 ```
 
 ---
@@ -190,7 +326,7 @@ ng build --configuration production
 PasswordVault.Domain/
   Entities/
     User.cs           – User entity
-    Account.cs        – Account credential entity
+    Account.cs        – Account credential entity (stores AES-encrypted password)
   Interfaces/
     IRepositories.cs  – IUserRepository, IAccountRepository, IUnitOfWork
 
@@ -198,7 +334,7 @@ PasswordVault.Application/
   DTOs/Dtos.cs        – All request/response records
   Interfaces/         – IAuthService, IAccountService, IEncryptionService…
   Services/
-    AuthService.cs    – Register, login, refresh token
+    AuthService.cs    – Register, login, refresh token, revoke
     AccountService.cs – CRUD, pagination, filtering
 
 PasswordVault.Infrastructure/
@@ -207,16 +343,19 @@ PasswordVault.Infrastructure/
     Repositories/             – UserRepository, AccountRepository, UnitOfWork
     Migrations/               – EF Core migration files
   Security/
-    CryptoServices.cs         – AES-256 encryption + PBKDF2 password hasher
-    JwtTokenService.cs        – JWT generation & validation
+    CryptoServices.cs         – AES-256-CBC encryption + PBKDF2 password hasher
+    JwtTokenService.cs        – JWT generation & validation (HMAC-SHA512)
+  Logging/
+    AuditService.cs           – Password reveal audit logging
 
 PasswordVault.API/
   Controllers/
-    AuthController.cs         – Auth endpoints
-    AccountsController.cs     – Account CRUD + decrypt
+    AuthController.cs         – Auth endpoints (rate-limited)
+    AccountsController.cs     – Account CRUD + decrypt endpoint
   Middleware/
-    GlobalExceptionMiddleware – Structured error responses
-  Program.cs                  – DI, JWT, CORS, rate limiting, Swagger
+    GlobalExceptionMiddleware – Structured JSON error responses
+  Program.cs                  – DI wiring, JWT, CORS, rate limiting, Swagger,
+                                EF migration with retry on startup
 
 frontend/src/app/
   core/
@@ -227,12 +366,12 @@ frontend/src/app/
       toast.service.ts        – Snackbar notifications
       theme.service.ts        – Dark/light theme toggle
     interceptors/
-      jwt.interceptor.ts      – Attach Bearer token + auto-refresh
+      jwt.interceptor.ts      – Attach Bearer token + auto-refresh on 401
     guards/
       auth.guard.ts           – Route protection
   features/
     auth/login/               – Login form component
-    auth/register/            – Register form + password strength
+    auth/register/            – Register form + password strength meter
     accounts/account-list/    – Data table + reveal/copy/delete
     accounts/account-form/    – Add/edit form + password generator
   shared/
@@ -245,4 +384,3 @@ frontend/src/app/
 ## License
 
 MIT
-"# password-vault" 
