@@ -40,8 +40,7 @@ try
     // ─── Database ──────────────────────────────────────────────────────────
     builder.Services.AddDbContext<AppDbContext>(opts =>
         opts.UseSqlServer(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
-            sql => sql.EnableRetryOnFailure(3)));
+            builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // ─── Repositories & Unit of Work ───────────────────────────────────────
     builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -145,26 +144,49 @@ try
     // ─── App Pipeline ──────────────────────────────────────────────────────
     var app = builder.Build();
 
-    // Run EF migrations on startup (all environments in Docker)
+    // ─── Database initialisation ───────────────────────────────────────────
     using (var scope = app.Services.CreateScope())
     {
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var maxRetries = 10;
-        for (int i = 1; i <= maxRetries; i++)
+        var db       = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var strategy = db.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
         {
-            try
+            // Always ensure the database itself exists first.
+            await db.Database.EnsureCreatedAsync();
+
+            // Attempt to apply EF Core migrations on top.
+            var knownMigrations = db.Database.GetMigrations().ToList();
+            Log.Information("EF migrations in assembly : {Count} → {Names}",
+                knownMigrations.Count,
+                string.Join(", ", knownMigrations.Count == 0 ? ["(none found)"] : knownMigrations));
+
+            if (knownMigrations.Count > 0)
             {
-                Log.Information("Applying EF migrations (attempt {Attempt}/{Max})...", i, maxRetries);
-                await db.Database.MigrateAsync();
-                Log.Information("EF migrations applied successfully.");
-                break;
+                var pending = (await db.Database.GetPendingMigrationsAsync()).ToList();
+                Log.Information("Pending migrations : {Count} → {Names}",
+                    pending.Count,
+                    string.Join(", ", pending.Count == 0 ? ["(none)"] : pending));
+
+                if (pending.Count > 0)
+                {
+                    Log.Information("Applying {Count} pending migration(s)…", pending.Count);
+                    await db.Database.MigrateAsync();
+                    Log.Information("EF migrations applied successfully.");
+                }
+                else
+                {
+                    Log.Information("Schema is already up to date.");
+                }
             }
-            catch (Exception ex) when (i < maxRetries)
+            else
             {
-                Log.Warning(ex, "Migration attempt {Attempt} failed. Retrying in 5s...", i);
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                // Migrations assembly scan returned nothing — EnsureCreatedAsync
+                // already created the schema directly from the EF model above.
+                Log.Warning("No EF migrations found in assembly. " +
+                            "Schema was initialised via EnsureCreatedAsync (model-based).");
             }
-        }
+        });
     }
 
     app.UseMiddleware<GlobalExceptionMiddleware>();

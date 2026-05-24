@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PasswordVault.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
+    [Migration("20260523000000_InitialCreate")]
     public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
