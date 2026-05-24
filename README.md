@@ -203,7 +203,7 @@ docker compose logs -f sqlserver
 sqlcmd -S localhost -E -i scripts/01_create_database.sql
 ```
 
-Or let Entity Framework auto-migrate on first API run (EF migrations run automatically on startup).
+Or simply start the API — the database and tables are created automatically on first startup (EF Core reads the model and builds the schema; no manual SQL needed).
 
 ### 2 — Backend API
 
@@ -355,7 +355,8 @@ PasswordVault.API/
   Middleware/
     GlobalExceptionMiddleware – Structured JSON error responses
   Program.cs                  – DI wiring, JWT, CORS, rate limiting, Swagger,
-                                EF migration with retry on startup
+                                auto schema creation on startup (EnsureCreatedAsync
+                                + MigrateAsync fallback)
 
 frontend/src/app/
   core/
